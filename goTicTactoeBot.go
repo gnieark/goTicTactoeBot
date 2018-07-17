@@ -61,12 +61,6 @@ func scoreTarget (tmap [3][3] int, target Coords, currentPlayer int) int{
 		}
 	}
 
-	/*
-	* 0-0 | 0-1 | 0-2
-	* 1-0 | 1-1 | 1-2
-	* 2-0 | 2-1 | 2-2
-	*/
-
 	alignments := [8][3]Coords{
 		{Coords{0,0},Coords{0,1},Coords{0,2}},
 		{Coords{1,0},Coords{1,1},Coords{1,2}},
@@ -95,13 +89,13 @@ func scoreTarget (tmap [3][3] int, target Coords, currentPlayer int) int{
 	//if it was the last cell
 	if depth == 9 { return 0}
 
-	//test if this target prevent to loose
 	var newPlayer int
 	if currentPlayer == 1 {
 		newPlayer = 2
 	}else{
 		newPlayer = 1
 	}
+	//recursion there
 	_ ,nextScore := playOn(tmap,newPlayer)
 	return -nextScore
 	
