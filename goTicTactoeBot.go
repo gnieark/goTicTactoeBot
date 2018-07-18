@@ -12,8 +12,10 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"./tictactoe"
 )
 
+//Plate somewhere to put the json encoded map
 type Plate struct{
 	Cell00 string `json:"0-0,omitempty"`
 	Cell01 string `json:"0-1,omitempty"`
@@ -25,8 +27,10 @@ type Plate struct{
 	Cell21 string `json:"2-1,omitempty"`
 	Cell22 string `json:"2-2,omitempty"`
 }
+
+//QuestionMessage Somewhere to put the whole JSON message from botsarena
 type QuestionMessage struct {
-	GameId      string  `json:"game-id,omitempty"`
+	GameID      string  `json:"game-id,omitempty"`
 	Action      string  `json:"action,omitempty"`   
 	Game        string  `json:"game,omitempty"`   
 	Players     int     `json:"players,omitempty"`  
@@ -35,112 +39,6 @@ type QuestionMessage struct {
 	PlayerIndex int 	`json:"player-index,omitempty"`
 }
 
-type Coords struct{
-	X int
-	Y int
-}
-
-/**
-* Give a score to a cell where to play
-* @param tmap the grid Values 0 are empty cells
-* 		 target. The coords to test
-*		 currentPlayer int.  His digit 1 or 2
-* @return int the score
-*/
-func scoreTarget (tmap [3][3] int, target Coords, currentPlayer int) int{
-	
-	
-	tmap[target.X][target.Y] = currentPlayer
-	//count the depth
-	depth :=0
-	for i := 0; i<3 ; i++{
-		for j := 0; j<3 ; j++{
-			if tmap[i][j] > 0 {
-				depth++
-			}
-		}
-	}
-
-	alignments := [8][3]Coords{
-		{Coords{0,0},Coords{0,1},Coords{0,2}},
-		{Coords{1,0},Coords{1,1},Coords{1,2}},
-		{Coords{2,0},Coords{2,1},Coords{2,2}},
-		{Coords{0,0},Coords{1,0},Coords{2,0}},
-		{Coords{0,1},Coords{1,1},Coords{2,1}},
-		{Coords{0,2},Coords{1,2},Coords{2,2}},
-		{Coords{0,0},Coords{1,1},Coords{2,2}},
-		{Coords{0,2},Coords{1,1},Coords{2,0}},
-	}
-
-	win:=false
-	for i:=0; i < len(alignments) ; i++ {
-		win=true
-		for j:=0; j < 3 ; j++ {
-			if tmap[alignments[i][j].X][alignments[i][j].Y] != currentPlayer{
-				win = false
-			}
-		}
-		if win  {	
-			return 100 - depth
-		}
-
-	}
-
-	//if it was the last cell
-	if depth == 9 { return 0}
-
-	var newPlayer int
-	if currentPlayer == 1 {
-		newPlayer = 2
-	}else{
-		newPlayer = 1
-	}
-	//recursion there
-	_ ,nextScore := playOn(tmap,newPlayer)
-	return -nextScore
-	
-}
-/**
-* return the better cell, and his score where to play
-* @param tmap the grid Values 0 are empty cells
-*		 currentPlayer int.  His digit 1 or 2
-* @return beastCoord,beastScore
-*/
-func playOn (tmap [3][3]int, currentPlayer int) (Coords,int){
-	
-	beastScore := -999
-	beastCoord := Coords{-1,-1} 
-	//scorer les emplacements libres
-	for i := 0; i < 3; i++ {
-		for j:= 0; j < 3; j++ {
-			if tmap[i][j] == 0 {
-				sc:=scoreTarget(tmap,Coords{i,j},currentPlayer)
-
-				if sc > beastScore {
-					beastScore = sc
-					beastCoord = Coords{i,j}
-				}
-			}
-		}
-	}
-	
-	return beastCoord,beastScore
-}
-
-//******** http, and parsing functions *******
-
-func tictactoeSymbolsToInt (symbolToTest string,mySymbol string) int{
-	switch symbolToTest {
-		case mySymbol:
-			return 1
-		case "": 
-			return 0
-		case " ": 
-			return 0
-		default:
-			return 2
-	}
-}
 
 func parseQuery(w http.ResponseWriter, r *http.Request){
 
@@ -174,7 +72,7 @@ func parseQuery(w http.ResponseWriter, r *http.Request){
 			tmap[2][1] = tictactoeSymbolsToInt(questionMessage.Board.Cell21,questionMessage.You)
 			tmap[2][2] = tictactoeSymbolsToInt(questionMessage.Board.Cell22,questionMessage.You)
 		
-			target, score := playOn(tmap, 1)
+			target, score := tictactoe.PlayOn(tmap, 1)
 			fmt.Fprintf(w, "{\"play\":\"%d-%d\",\"Comment\":\"score %d\"}", target.X, target.Y,score)
 
 		default:
@@ -182,6 +80,18 @@ func parseQuery(w http.ResponseWriter, r *http.Request){
 			
 	}
 
+}
+func tictactoeSymbolsToInt (symbolToTest string,mySymbol string) int{
+	switch symbolToTest {
+		case mySymbol:
+			return 1
+		case "": 
+			return 0
+		case " ": 
+			return 0
+		default:
+			return 2
+	}
 }
 func arena(w http.ResponseWriter, r *http.Request){
 	data, err := ioutil.ReadFile("./arena.html")
@@ -198,3 +108,4 @@ func main() {
     http.HandleFunc("/", parseQuery)
     log.Fatal(http.ListenAndServe(":8080", nil))
 }
+
