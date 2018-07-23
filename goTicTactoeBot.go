@@ -7,12 +7,13 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"fmt"
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
-	"./tictactoe"
+	"git.ventresmous.fr/gnieark/goTicTactoeBot/tictactoe"
 )
 
 //Plate somewhere to put the json encoded map
@@ -104,8 +105,12 @@ func arena(w http.ResponseWriter, r *http.Request){
 
 }
 func main() {
+	var listenAddr string	
+	flag.StringVar(&listenAddr, "listen-addr", ":5000", "server listen address")
+	flag.Parse()
+
 	http.HandleFunc("/arena", arena)
     http.HandleFunc("/", parseQuery)
-    log.Fatal(http.ListenAndServe(":8080", nil))
+    log.Fatal(http.ListenAndServe(listenAddr, nil))
 }
 
